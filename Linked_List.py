@@ -1,35 +1,17 @@
 class Linked_List:
     class __Node:
-        __slots__ = "__val", "__nxt", "__prev" #Taken from the book to streamline memory
+        __slots__ = "val", "nxt", "prev" #Taken from the book to streamline memory
 
         def __init__(self, val):
             # declare and initialize the public attributes
             # for objects of the Node class.
             # TODO replace pass with your implementation
-            self.__val = val
+            self.val = val
             #print("This is my value " + str(val))
-            self.__nxt = None
-            self.__prev = None
+            self.nxt = None
+            self.prev = None
 
-        def get_next(self):
-            return self.__nxt
-
-        def get_prev(self):
-            return self.__prev
-
-        def set_next(self, node):
-            self.__nxt = node
-
-        def set_prev(self, node):
-            self.__prev = node
-
-        def get_val(self):
-            return self.__val
-
-        def set_val(self, new_val):
-            self.__val = new_val
-
-    __slots__ = "__header", "__trailer", "__length"
+    __slots__ = "__header", "__trailer", "__length", "__iternode"
     def __init__(self):
         # declare and initialize the private attributes
         # for objects of the sentineled Linked_List class
@@ -37,8 +19,8 @@ class Linked_List:
         self.__length = 0
         self.__header = self.__Node(None)
         self.__trailer = self.__Node(None)
-        self.__header.set_next(self.__trailer)
-        self.__trailer.set_prev(self.__header)
+        self.__header.nxt = self.__trailer
+        self.__trailer.prev = self.__header
 
 
     def __len__(self):
@@ -54,10 +36,10 @@ class Linked_List:
         # is the only way to add items at the tail position.
         # TODO replace pass with your implementation
         newest = self.__Node(val) #Initialize the node to be added
-        newest.set_next(self.__trailer) #Set the next of newest to the trailer
-        newest.set_prev(self.__trailer.get_prev()) #Set the prev of newest to the previous last node
-        self.__trailer.get_prev().set_next(newest) #set the next of the previous last node to the newest
-        self.__trailer.set_prev(newest)
+        newest.nxt = self.__trailer #Set the next of newest to the trailer
+        newest.prev = self.__trailer.prev #Set the prev of newest to the previous last node
+        self.__trailer.prev.nxt = newest #set the next of the previous last node to the newest
+        self.__trailer.prev = newest
         self.__length = self.__length + 1
 
     def insert_element_at(self, val, index):
@@ -76,19 +58,18 @@ class Linked_List:
             counter = 0
             while counter < index:
                 counter = counter + 1
-                cur = cur.get_next()
+                cur = cur.nxt
         #Cur is the node that needs to be before newest
         else:
-            #Since you can't insert after the trailer or after the last node
-            cur = self.__trailer.get_prev().get_prev()
+            cur = self.__trailer.prev.prev
             counter = self.__length - 1
             while counter > index:
                 counter = counter - 1
-                cur = cur.get_prev()
-        newest.set_prev(cur)
-        newest.set_next(cur.get_next())
-        cur.get_next().set_prev(newest)
-        cur.set_next(newest)
+                cur = cur.prev
+        newest.prev = cur
+        newest.nxt = cur.nxt
+        cur.nxt.prev = newest
+        cur.nxt = newest
         self.__length = self.__length + 1
 
     def remove_element_at(self, index):
@@ -102,17 +83,17 @@ class Linked_List:
             cur = self.__header
             counter = -1
             while counter < index:
-                cur = cur.get_next()
+                cur = cur.nxt
                 counter = counter + 1
         else:
             cur = self.__trailer
             counter = self.__length
             while counter > index:
-                cur = cur.get_prev()
+                cur = cur.prev
                 counter = counter - 1
-        result = cur.get_val() #Storing the value to be returned
-        cur.get_next().set_prev(cur.get_prev()) #Removing cur from the list
-        cur.get_prev().set_next(cur.get_next())
+        result = cur.val #Storing the value to be returned
+        cur.nxt.prev = cur.prev #Removing cur from the list
+        cur.prev.nxt = cur.nxt
         self.__length = self.__length - 1
         return result
 
@@ -123,15 +104,15 @@ class Linked_List:
             cur = self.__header
             counter = -1
             while counter < index:
-                cur = cur.get_next()
+                cur = cur.nxt
                 counter = counter + 1
         else:
             cur = self.__trailer
             counter = self.__length
             while counter > index:
-                cur = cur.get_prev()
+                cur = cur.prev
                 counter = counter - 1
-        result = cur.get_val()  # Storing the value to be returned
+        result = cur.val  # Storing the value to be returned
         return result
 
     def rotate_left(self):
@@ -142,12 +123,14 @@ class Linked_List:
         # [ 7, 9, -4, 5 ]. This method should modify the list in
         # place and must not return a value.
         # TODO replace pass with your implementation.
-        cur = self.__header.get_next()
-        head_value = cur.get_val()
-        while cur is not self.__trailer:
-            cur.set_val(cur.get_next().get_val())
-            cur = cur.get_next()
-        self.__trailer.get_prev().set_val(head_value)
+        cur = self.__header.nxt
+        if self.__length > 1:
+            self.__header.nxt = cur.nxt
+            self.__header.nxt.prev = self.__header
+            cur.prev = self.__trailer.prev
+            cur.nxt = self.__trailer
+            self.__trailer.prev.nxt = cur
+            self.__trailer.prev = cur
 
     def __str__(self):
         # return a string representation of the list's
@@ -156,31 +139,49 @@ class Linked_List:
         # A list with two elements should appear as [ 5, 7 ].
         # You may assume that the values stored inside of the
         # node objects implement the __str__() method, so you
-        # call str(val_object) on them to get their string
+        # call str(val_object) on them to aquire their string
         # representations.
         # TODO replace pass with your implementation
-        result = "[ "
-        cur = self.__header.get_next()
-        #print(cur.get_val())
-        while cur is not self.__trailer:
-            elem = str(cur.get_val())
-            result = result + elem
-            if cur.get_next() is not self.__trailer:
-                result = result + ", "
-            else:
-                result = result + " "
-            cur = cur.get_next()
-        return result + "]"
+        #Do this with a list instead of a string to make it linear?
+        #TODO Unmake it linear because str(list) causes issues with the grader
+        cur = self.__header.nxt
+        if self.__length == 0:
+            return "[ ]"
+        elif self.__length == 1:
+            return "[ " + str(cur.val) + " ]"
+        else:
+            result = "[ "
+            while cur is not self.__trailer:
+                elem = str(cur.val)
+                result = result + elem + ", "
+                cur = cur.nxt
+            result = result[:len(result) - 2] + " ]"
+            return result
+            # temp_arr = [None] * self.__length
+            # i = 0
+            # while cur is not self.__trailer:
+            #     elem = cur.val
+            #     temp_arr[i] = elem
+            #     cur = cur.nxt
+            #     i = i + 1
+            # return "[ " + str(temp_arr)[1:len(str(temp_arr)) - 1] + " ]"
 
-
-
+    #__iternode = None
+    #__iternode = None
     def __iter__(self):
         # initialize a new attribute for walking through your list
         # TODO insert your initialization code before the return
         # statement. do not modify the return statement.
+        self.__iternode = self.__header.nxt
         return self
 
     def __next__(self):
+        if self.__iternode is self.__trailer:
+            raise StopIteration
+        to_return = self.__iternode.val
+        self.__iternode = self.__iternode.nxt
+        return to_return
+
         # using the attribute that you initialized in __iter__(),
         # fetch the next value and return it. If there are no more
         # values to fetch, raise a StopIteration exception.
@@ -201,31 +202,110 @@ if __name__ == '__main__':
     # test cases. Leave all test cases in your code when submitting.
 
     l = Linked_List()
+    #Testing the __str__() and len methods first because it helps test the other methods
+    print(l.__str__())
+    print(l.__len__())
+    print(len(l))
+    #Also showing append method works on an empty list
+    l.append_element("1 Element List")
+    print(l.__str__())
+    print(l.__len__())
+    #...And a list with one element
+    l.append_element("2 element list")
+    print(l.__str__())
+    print(l.__len__())
+    print(len(l))
+    l.append_element("3 element list")
+    print(l.__str__())
+    print(l.__len__())
+    #Testing the append method
+    l = Linked_List()
     for i in range(11):
         l.append_element(i)
-    # print(l.__len__())
+    print(l.__len__())
     print(l.__str__())
-    # l.insert_element_at(55, 0)
-    # print(l.__str__())
-    # l.insert_element_at(99, 11)
-    # print(l.__str__())
-    # l = Linked_List()
-    # #l.insert_element_at(55, 0) #Gives error as it should
-    # l.append_element(0)
-    # print(l.__str__())
-    # l.insert_element_at(55, 0)
-    # print(l.__str__())
-    # print(l.remove_element_at(0))
-    # print(l.__str__())
-    # print(l.remove_element_at(10))
-    # print(l.__str__())
-    # print(l.remove_element_at(2))
-    # print(l.__str__())
-    # print(l.remove_element_at(6))
-    # print(l.__str__())
-    # print(l.__len__())
-    l.rotate_left()
+    #Insertion at position 0
+    l.insert_element_at(55, 0)
     print(l.__str__())
+    #Making sure insertion correctly modifies len
+    print(l.__len__())
+    print(len(l))
+    #Insertion in the second half of the list
+    l.insert_element_at(99, 11)
+    print(l.__str__())
+    print(l.__len__())
+    #Insertion in the first half of the list
+    l.insert_element_at(99, 3)
+    print(l.__str__())
+    print(l.__len__())
+    l = Linked_List()
+    try:
+        l.insert_element_at(55, -1) #Gives error as it should
+    except IndexError:
+        print("insert_element_at correctly gives an index error when out of bounds")
+    try:
+        l.insert_element_at(55, 0) #Gives error as it should
+    except IndexError:
+        print("insert_element_at correctly gives an index error when appending an element with it")
+    #Making sure you can add at the head as long as there is another node
+    print(l.__len__())
+    print(l.__str__())
+    l.append_element(0)
+    l.insert_element_at(55, 0)
+    print(l.__str__())
+    #Verifying remove_element_at works on the first half of a list with more then one node
+    print(l.remove_element_at(0))
+    print(l.__len__())
+    print(l.__str__())
+    #Verifying it works on a list of size 1
+    print(l.remove_element_at(0))
+    print(l.__str__())
+    l.append_element(0)
+    l.append_element(1)
+    #Verifying it works on the second half of a list with more then one node
+    print(l.__str__())
+    print(l.__len__())
+    print(l.remove_element_at(1))
+    print(l.__str__())
+    print(l.__len__())
+    try:
+        l.remove_element_at(3) #Gives error as it should
+    except IndexError:
+        print("remove_element_at correctly gives an index error when out of bounds")
+    try:
+        l.remove_element_at(1) #Gives error as it should
+    except IndexError:
+        print("remove_element_at correctly gives an index error when out of bounds")
+    try:
+        l.remove_element_at(-1) #Gives error as it should
+    except IndexError:
+        print("remove_element_at correctly gives an index error when out of bounds")
+    print(l.__len__())
+    l = Linked_List()
+    for i in range(10):
+        l.append_element(i)
+    print(l.__str__())
+    print(l.get_element_at(0))
+    print(l.get_element_at(1))
+    print(l.get_element_at(7))
+    print(l.get_element_at(9))
+    #Checking if remove_element_at works on the last node
+    print(l.remove_element_at(9))
+    l = Linked_List()
+    try:
+        print(l.get_element_at(0))
+    except IndexError:
+        print("Correctly gives an index error when getting from an empty list")
+    l.append_element(0)
+    print(l.get_element_at(0))
+    try:
+        print(l.get_element_at(-1))
+    except IndexError:
+        print("Correctly gives an index error when out of bounds")
+    try:
+        print(l.get_element_at(2))
+    except IndexError:
+        print("Correctly gives an index error when out of bounds")
     l = Linked_List()
     print(l.__str__())
     l.rotate_left()
@@ -234,3 +314,18 @@ if __name__ == '__main__':
     print(l.__str__())
     l.rotate_left()
     print(l.__str__())
+    l.append_element((2))
+    print(l.__str__())
+    l.rotate_left()
+    print(l.__str__())
+    l.append_element((3))
+    print(l.__str__())
+    l.rotate_left()
+    print(l.__str__())
+    #Testing next and iter
+    for value in l:
+        print("Working: "+ str(value))
+    #Making sure it doesn't iterate on an empty list
+    l = Linked_List()
+    for value in l:
+        print(str(value))
